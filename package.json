@@ -1,0 +1,36 @@
+{
+  "name": "acls-backend",
+  "version": "1.0.0",
+  "description": "ACLS backend: REST API, live updates, MQTT (built-in broker or HiveMQ Cloud) and firmware build service",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/e2e.test.js",
+    "seed": "node src/seed/index.js",
+    "simulate": "node src/scripts/simulate-device.js",
+    "backup": "node src/scripts/backup.js",
+    "reset-password": "node src/scripts/reset-password.js",
+    "toolchain:install": "node src/scripts/install-toolchain.js",
+    "broker:ca": "node src/scripts/broker-ca.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "aedes": "^1.2.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.11.2",
+    "mqtt": "^5.16.1",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}
