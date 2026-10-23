@@ -62,7 +62,7 @@ Problems? See *Stuck at "Connecting"* and *Port not found*.`,
 
 > Uploading your own program **replaces the ACLS firmware** on that board: it stops working with the lighting system until you upload the ACLS firmware again (Devices → Upload firmware). For the lights themselves always use *Upload firmware*.
 
-Available libraries: ${TOOLCHAIN.libraries.map((l) => `${l.name} ${l.version}`).join(', ')}, plus the built-in ESP libraries (WiFi, WebServer, …).`,
+Available libraries: ${[...TOOLCHAIN.libraries, ...TOOLCHAIN.editorLibraries].map((l) => `${l.name} ${l.version}`).join(', ')}, plus the built-in ESP libraries (WiFi, WebServer, …).`,
   },
   {
     slug: 'upload-firmware',

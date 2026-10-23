@@ -92,7 +92,7 @@ async function main() {
     if (cores.get(id) === version) console.log(`${id}@${version} already installed`)
     else run(['core', 'install', `${id}@${version}`])
   }
-  run(['lib', 'install', ...TOOLCHAIN.libraries.map((l) => `${l.name}@${l.version}`)])
+  run(['lib', 'install', ...[...TOOLCHAIN.libraries, ...TOOLCHAIN.editorLibraries].map((l) => `${l.name}@${l.version}`)])
 
   if (!process.argv.includes('--keep-all-chips')) {
     const tools = path.join(dir, 'data', 'packages', 'esp32', 'tools')

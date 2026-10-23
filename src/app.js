@@ -23,6 +23,7 @@ import auditRoutes from './routes/audit.js'
 import userRoutes from './routes/users.js'
 import settingRoutes from './routes/settings.js'
 import codeRoutes from './routes/code.js'
+import templateRoutes from './routes/templates.js'
 
 // The web application: REST API under /api, the board's OTA download, and the built website.
 export function createApp() {
@@ -58,7 +59,8 @@ export function createApp() {
   app.use('/api/guides', guideRoutes) //             help guides
   app.use('/api', auditRoutes) //                    /audit/commands, /audit/changes
   app.use('/api', userRoutes) //                     /users (admin)
-  app.use('/api', settingRoutes) //                  /settings
+  app.use('/api', settingRoutes) //                  /settings, /settings/mqtt (cloud broker)
+  app.use('/api/templates', templateRoutes) //       device templates for the Add a device wizard
   app.use('/api', codeRoutes) //                     /code/compile, /sketches (code editor, admin)
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
   app.use(errorHandler)

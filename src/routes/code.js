@@ -30,7 +30,7 @@ router.get('/code/info', ADMIN, (req, res) => {
   res.json({
     ready: toolchainReady(),
     boards: { esp32: TOOLCHAIN.esp32.boardName, esp8266: TOOLCHAIN.esp8266.boardName },
-    libraries: TOOLCHAIN.libraries.map((l) => `${l.name} ${l.version}`),
+    libraries: [...TOOLCHAIN.libraries, ...TOOLCHAIN.editorLibraries].map((l) => `${l.name} ${l.version}`),
   })
 })
 

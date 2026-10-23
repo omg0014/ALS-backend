@@ -51,6 +51,8 @@ export const config = {
     devicePassword: env.MQTT_DEVICE_PASSWORD || '',
     deviceCa: pem(env.MQTT_DEVICE_CA), // root certificate the boards check the broker against
   },
+  // Running in the cloud (Render sets RENDER=true): no LAN broker here, boards need an external one
+  cloud: Boolean(env.RENDER) || env.CLOUD === 'true',
   // Public address of this server (https://….onrender.com): boards download WiFi updates from here
   publicUrl: (env.PUBLIC_URL || env.RENDER_EXTERNAL_URL || '').replace(/\/$/, ''),
   firmwareDir: env.FIRMWARE_DIR || firmwareDir || path.resolve(here, '../../firmware'),

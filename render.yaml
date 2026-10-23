@@ -25,15 +25,5 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
-      - key: MQTT_URL
-        sync: false
-      - key: MQTT_USERNAME
-        sync: false
-      - key: MQTT_PASSWORD
-        sync: false
-      - key: MQTT_DEVICE_USERNAME
-        sync: false
-      - key: MQTT_DEVICE_PASSWORD
-        sync: false
-      - key: MQTT_DEVICE_CA
-        sync: false
+      # The MQTT broker is entered on the website (Settings → MQTT broker). Setting MQTT_URL,
+      # MQTT_USERNAME, MQTT_PASSWORD, MQTT_DEVICE_USERNAME, MQTT_DEVICE_PASSWORD here instead also works.

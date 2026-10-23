@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { Device, Setting } from '../models/index.js'
 import { config } from '../config.js'
+import { externalMqtt } from './mqttConfig.js'
 
 // This PC's LAN IPv4 (what the boards connect to), so nobody has to type it in. Skips loopback,
 // VPN/virtual adapters and non-private addresses; prefers the main Ethernet/WiFi adapter.
@@ -45,10 +46,11 @@ export async function loadSettings() {
   for (const [key, def] of Object.entries(SETTING_DEFS)) {
     const row = rows.find((r) => r.key === key)
     let value = row ? row.value : def.default
-    if (config.externalMqtt) {
-      // Cloud: the boards connect to the external broker (MQTT_URL), not to this server
-      if (key === 'brokerHost') value = config.externalMqtt.host
-      if (key === 'brokerPort') value = config.externalMqtt.port
+    const ext = externalMqtt()
+    if (ext) {
+      // Cloud: the boards connect to the external broker, not to this server
+      if (key === 'brokerHost') value = ext.host
+      if (key === 'brokerPort') value = ext.port
     } else {
       // Not set by hand → BROKER_PUBLIC_HOST from .env, else this PC's own LAN address (found at start)
       if (key === 'brokerHost' && !value) value = config.brokerPublicHost || detectLanIp()

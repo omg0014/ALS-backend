@@ -40,8 +40,11 @@ export function loadWarnings(profile, group) {
         'Split the circuit across channels or use a contactor.'
     )
   }
-  if (profile.contactRatingA >= 30 && group.type !== 'load') {
-    warnings.push('30A module is meant for TV / smart-board points only (group type "load").')
+  if (group.type === 'ac' && (profile.contactRatingA ?? 0) < 30) {
+    warnings.push('An AC needs the 30A relay: 10A contacts cannot take a compressor\'s start surge.')
+  }
+  if (profile.contactRatingA >= 30 && !['ac', 'load'].includes(group.type)) {
+    warnings.push('30A module is meant for an AC or TV / smart-board point (group type "AC" or "TV / smart board").')
   }
   return warnings
 }

@@ -10,6 +10,7 @@ import { actorOf, logChange } from '../changeLog.js'
 import { allSettings } from '../settings.js'
 import { emit } from '../realtime.js'
 import { compileSketch, toolchainReady } from './builder.js'
+import { externalMqtt } from '../mqttConfig.js'
 import { publishCommand } from '../broker.js'
 
 const OTA_TOKEN_MS = 15 * 60 * 1000
@@ -19,16 +20,19 @@ const buildEvent = (build) => emit('build', { buildId: String(build._id), device
 // How boards log in to an external broker (cloud): one shared device login over TLS. Undefined with the
 // built-in broker, where each board has its own secret.
 export function deviceMqttOptions() {
-  const ext = config.externalMqtt
-  if (!ext) return undefined
-  if (!ext.deviceUsername || !ext.devicePassword) throw badRequest('MQTT_DEVICE_USERNAME and MQTT_DEVICE_PASSWORD are not set on the server')
+  const ext = externalMqtt()
+  if (!ext) {
+    if (config.cloud) throw badRequest('Enter the MQTT broker on the Settings page first: the boards need it to connect.')
+    return undefined
+  }
+  if (!ext.deviceUsername || !ext.devicePassword) throw badRequest('The MQTT broker has no board login yet: add it on the Settings page.')
   return { tls: ext.tls, ca: ext.deviceCa, username: ext.deviceUsername, password: ext.devicePassword }
 }
 
 // Where a board downloads a WiFi update: this server's public address (cloud), else its LAN address.
 export function otaBaseUrl() {
   if (config.publicUrl) return config.publicUrl
-  if (config.externalMqtt) throw badRequest('PUBLIC_URL is not set on the server, so boards cannot download updates')
+  if (externalMqtt()) throw badRequest('PUBLIC_URL is not set on the server, so boards cannot download updates')
   return `http://${allSettings().brokerHost}:${config.port}`
 }
 

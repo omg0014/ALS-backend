@@ -31,6 +31,8 @@ export const TOOLCHAIN = {
     { name: 'PubSubClient', author: "Nick O'Leary", version: '2.8' },
     { name: 'ArduinoJson', author: 'Benoit Blanchon', version: '7.4.3' },
   ],
+  // Extra libraries for the code editor's own programs only (IR remote / AC tests); the ACLS firmware does not use them
+  editorLibraries: [{ name: 'IRremoteESP8266', author: 'David Conran', version: '2.9.0' }],
 }
 
 export function readFirmwareFile(...parts) {

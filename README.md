@@ -13,7 +13,7 @@ It runs in two ways, with the same code:
 | Website | served by the same server | [Vercel](https://vercel.com) |
 | Lights work without internet | yes | no |
 
-Leave `MQTT_URL` empty for the school PC; set it for the cloud.
+On the school PC the MQTT broker is built in. In the cloud an admin enters an MQTT broker on the website (**Settings → MQTT broker**); setting `MQTT_URL` and the other `MQTT_…` variables on the server instead also works.
 
 ## What's in here
 
@@ -40,12 +40,13 @@ render.yaml        Render blueprint
 3. Copy the connection string and add the database name `acls`:
    `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/acls?appName=acls`
 
-### 2. HiveMQ Cloud (free Serverless cluster)
-1. Create a cluster and note its address, e.g. `abc123.s1.eu.hivemq.cloud` (port **8883**, TLS).
-2. **Access Management → create two credentials**, both allowed to publish and subscribe:
+### 2. An MQTT broker
+Any MQTT broker that is reachable from the internet with a username and password works: HiveMQ Cloud, EMQX Cloud, flespi, or your own.
+1. Create the broker and note its address, e.g. `abc123.s1.eu.hivemq.cloud` (port **8883**, TLS).
+2. Create **two logins**, both allowed to publish and subscribe:
    - one for the server (e.g. `acls-server`);
    - one shared by all boards (e.g. `acls-devices`).
-3. Get the broker's root certificate for the boards (run on any PC with this repo):
+3. Optional: the broker's root certificate, so boards check they talk to the real broker (run on any PC with this repo):
    ```
    npm install
    npm run broker:ca -- mqtts://abc123.s1.eu.hivemq.cloud:8883
@@ -61,13 +62,12 @@ render.yaml        Render blueprint
 | `MONGO_URL` | the Atlas string from step 1 |
 | `ADMIN_PASSWORD` | password for the first `admin` login (only used on the very first start) |
 | `CORS_ORIGIN` | the Vercel website address, e.g. `https://als-frontend.vercel.app` |
-| `MQTT_URL` | `mqtts://abc123.s1.eu.hivemq.cloud:8883` |
-| `MQTT_USERNAME` / `MQTT_PASSWORD` | the server credential |
-| `MQTT_DEVICE_USERNAME` / `MQTT_DEVICE_PASSWORD` | the boards' credential |
-| `MQTT_DEVICE_CA` | the certificate from step 2.3 (paste it with its line breaks) |
 
 3. After the first deploy, open `https://<your-service>.onrender.com/api/health`. It should show `{"ok":true,"db":true}`.
-   The log shows `[mqtt] connected to …hivemq.cloud:8883 (TLS)`.
+4. Log in to the website as `admin` → **Settings → MQTT broker → Enter the MQTT broker**:
+   - fill in the address, port 8883, both logins and the certificate (optional);
+   - click **Test connection**, then **Save and connect**.
+   The passwords are stored encrypted (with `JWT_SECRET`) and are never shown again.
 
 ### 4. Keep it awake
 Render's free plan sleeps after 15 minutes without visitors. While it sleeps, switching and power-cut restore don't run.
@@ -78,10 +78,15 @@ Create a free job on [cron-job.org](https://cron-job.org) (or UptimeRobot) that 
 See [ALS-frontend](https://github.com/omg0014/ALS-frontend). Put this server's address in its `vercel.json` and `VITE_BACKEND_URL`.
 
 ### 6. The boards
-Boards need firmware **1.2.0 or newer** to use the encrypted cloud broker. On the website:
-**Devices → device → Upload firmware**. For a board's first cloud firmware:
-- choose **Download for Arduino IDE** and upload it once by USB;
-- after that, its WiFi, relays and server settings can be changed with **Update over WiFi**, on a server that can build firmware (see "Limits").
+On the website: **Add a device**.
+1. Connect the board by USB in Chrome (or type its chip ID).
+2. Pick a **template** (e.g. *ESP-12E + 30 A 1-ch · 1 AC*), or set the room's lines with + / −.
+   **Save these answers as a template** to reuse them for the next classroom.
+3. Type the classroom WiFi.
+4. Do the wiring that's shown.
+5. **Yes, download the code.** The page shows the Arduino IDE upload steps, and the board appears **online** once it runs.
+
+Boards need firmware **1.2.0 or newer** for the encrypted broker.
 
 ## Limits on the free cloud plan
 - **No firmware building on Render free.** The build tools are about 2 GB, and compiling needs more memory and CPU than 512 MB / 0.1 CPU.

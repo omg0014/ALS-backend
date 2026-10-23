@@ -5,13 +5,14 @@ import { Device } from '../models/index.js'
 import { verifyDeviceSecret } from '../lib/crypto.js'
 import { config } from '../config.js'
 import { getSetting } from './settings.js'
+import { externalMqtt } from './mqttConfig.js'
 import { markNewestFirmwareInstalled } from './firmware/installed.js'
 
 // Two ways to run MQTT, same topics (acls/v1/{deviceId}/…) either way:
 //  - built in (school PC): an embedded broker. Anonymous access is off; each device has its own
 //    username + secret and may only use acls/v1/{deviceId}/#: publish state/status/telemetry/ota,
 //    subscribe cmd. The backend publishes commands internally and never needs MQTT credentials.
-//  - external (cloud, MQTT_URL set, e.g. HiveMQ Cloud over TLS): this server is a client of that
+//  - external (cloud: MQTT_URL set, or a broker entered on the Settings page): this server is a client of that
 //    broker. The boards share one device login there; online/offline comes from their retained
 //    status topic and Last Will.
 
@@ -19,15 +20,55 @@ const DEVICE_PUBLISH = new Set(['state', 'status', 'telemetry', 'ota'])
 let aedes = null
 let tcpServer = null
 let client = null // external broker connection
+let handlers = null
 const onlineExternal = new Set()
 
 const authError = (code, msg) => Object.assign(new Error(msg), { returnCode: code })
 const topicFor = (deviceId, leaf) => `${getSetting('topicRoot')}/${deviceId}/${leaf}`
 
-export const usesExternalBroker = () => Boolean(config.externalMqtt)
+export const usesExternalBroker = () => Boolean(externalMqtt())
 
-export async function startBroker(handlers) {
-  return config.externalMqtt ? connectExternal(handlers) : startEmbedded(handlers)
+export async function startBroker(h) {
+  handlers = h
+  const ext = externalMqtt()
+  if (ext) return connectExternal(ext, h)
+  // In the cloud nobody could reach a built-in broker: wait until an admin enters one
+  if (config.cloud) return console.warn('[mqtt] no broker set: enter one on the Settings page')
+  return startEmbedded(h)
+}
+
+// The broker settings changed on the Settings page: drop the current connection (or the built-in
+// broker) and start again with the new one.
+export async function restartBroker() {
+  await stopBroker()
+  aedes = null
+  tcpServer = null
+  client = null
+  onlineExternal.clear()
+  await startBroker(handlers)
+}
+
+export const brokerConnected = () => (client ? client.connected : Boolean(tcpServer?.listening))
+
+// Tries a login on a broker without keeping the connection (Settings page "Test").
+export function testBrokerLogin({ url, username, password, ca }) {
+  return new Promise((resolve) => {
+    const c = mqtt.connect(url, {
+      username: username || undefined,
+      password: password || undefined,
+      clientId: `acls-test-${Math.random().toString(16).slice(2, 8)}`,
+      reconnectPeriod: 0,
+      connectTimeout: 10000,
+      ...(ca ? { ca } : {}),
+    })
+    const done = (result) => {
+      c.end(true)
+      resolve(result)
+    }
+    c.once('connect', () => done({ ok: true }))
+    c.once('error', (err) => done({ ok: false, error: err.message }))
+    setTimeout(() => done({ ok: false, error: 'No answer from the broker within 10 seconds' }), 11000)
+  })
 }
 
 // Splits acls/v1/{deviceId}/{leaf} and hands device messages to the app, in arrival order per device.
@@ -44,8 +85,7 @@ function dispatcher(onMessage) {
 
 // ---- External broker (cloud) ----
 
-async function connectExternal({ onMessage, onDisconnect }) {
-  const ext = config.externalMqtt
+async function connectExternal(ext, { onMessage, onDisconnect }) {
   const root = getSetting('topicRoot')
   const dispatch = dispatcher(onMessage)
   client = mqtt.connect(ext.url, {
@@ -165,6 +205,7 @@ export function publishCommand(deviceId, payload) {
       if (!client.connected) return reject(new Error('MQTT broker not reachable'))
       return client.publish(topic, body, { qos: 0, retain: false }, (err) => (err ? reject(err) : resolve()))
     }
+    if (!aedes) return reject(new Error('No MQTT broker set'))
     aedes.publish({ cmd: 'publish', topic, payload: body, qos: 0, retain: false }, (err) => (err ? reject(err) : resolve()))
   })
 }

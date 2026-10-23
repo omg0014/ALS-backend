@@ -4,6 +4,7 @@ import { config } from './config.js'
 import { createApp } from './app.js'
 import { seed } from './seed/index.js'
 import { allSettings, loadSettings, trackServerAddress } from './services/settings.js'
+import { loadMqttConfig, externalMqtt } from './services/mqttConfig.js'
 import { startBroker, stopBroker } from './services/broker.js'
 import { initRealtime } from './services/realtime.js'
 import { onDeviceDisconnect, onDeviceMessage, resetLiveState } from './services/deviceEvents.js'
@@ -25,6 +26,7 @@ async function main() {
   console.log(`[db] connected ${config.mongoUrl.replace(/\/\/.*@/, '//***@')}`)
   await Promise.all(mongoose.modelNames().map((n) => mongoose.model(n).syncIndexes()))
   await seed({ log: (m) => console.log(`[seed] ${m}`) })
+  await loadMqttConfig()
   await loadSettings()
   await trackServerAddress()
   await resetLiveState()
@@ -39,7 +41,8 @@ async function main() {
   await startBroker({ port: config.mqttPort, onMessage: onDeviceMessage, onDisconnect: onDeviceDisconnect })
   await new Promise((resolve) => server.listen(config.port, resolve))
   console.log(`[api] listening on :${config.port}  →  open ${config.publicUrl || `http://localhost:${config.port}`}`)
-  if (config.externalMqtt) console.log(`[api] devices connect to the MQTT broker ${config.externalMqtt.host}:${config.externalMqtt.port}`)
+  if (externalMqtt()) console.log(`[api] devices connect to the MQTT broker ${externalMqtt().host}:${externalMqtt().port}`)
+  else if (config.cloud) console.warn('[api] no MQTT broker yet: an admin enters it on the Settings page')
   else if (allSettings().brokerHost) console.log(`[api] devices connect to ${allSettings().brokerHost}:${config.mqttPort}; others on the network open http://${allSettings().brokerHost}:${config.port}`)
 
   const shutdown = async () => {

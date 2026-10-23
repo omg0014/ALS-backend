@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 import mongoose from 'mongoose'
 import { config } from '../config.js'
-import { Floor, Guide, HardwareProfile, LightingGroup, Room, User } from '../models/index.js'
+import { DeviceTemplate, Floor, Guide, HardwareProfile, LightingGroup, Room, User } from '../models/index.js'
 import { GUIDES } from './guides.js'
 import { PROFILES } from './profiles.js'
 import { hashPassword } from '../lib/crypto.js'
@@ -16,12 +16,31 @@ const PILOT_GROUPS = [
   { name: 'Lights B', type: 'lights', switches: 'Light 4-6 (K4 / IN4, not wired)' },
 ]
 
+const TEMPLATES = [
+  { name: 'ESP-12E + 30 A 1-ch · 1 AC', code: 'P2', counts: { ac: 1 } },
+  { name: 'ESP-12E + 30 A 1-ch · 1 TV / smart board', code: 'P2', counts: { load: 1 } },
+  { name: 'ESP-12E + 10 A 4-ch · 2 lights, 2 fans', code: 'P4', counts: { lights: 2, fans: 2 } },
+  { name: 'ESP32 + 10 A 4-ch · 2 lights, 2 fans', code: 'P1', counts: { lights: 2, fans: 2 } },
+]
+
 export async function seed({ log = console.log } = {}) {
   for (const p of PROFILES) {
     const r = await HardwareProfile.updateOne({ code: p.code, version: 1 }, { $setOnInsert: { ...p, version: 1 } }, { upsert: true })
     if (r.upsertedCount) log(`profile ${p.code} created`)
     // Rows created before moduleKind existed
     await HardwareProfile.updateOne({ code: p.code, version: 1, moduleKind: { $in: [null, 'other'] } }, { $set: { moduleKind: p.moduleKind } })
+  }
+
+  // Ready-made device templates (owner request 2026-10-23): the common classroom boxes
+  for (const t of TEMPLATES) {
+    const profile = await HardwareProfile.findOne({ code: t.code, version: 1 }).lean()
+    if (!profile) continue
+    const r = await DeviceTemplate.updateOne(
+      { name: t.name },
+      { $setOnInsert: { name: t.name, espModel: profile.espModel, profile: profile._id, counts: t.counts, builtIn: true } },
+      { upsert: true }
+    )
+    if (r.upsertedCount) log(`template "${t.name}" created`)
   }
 
   for (const g of GUIDES) {
