@@ -88,6 +88,16 @@ On the website: **Add a device**.
 
 Boards need firmware **1.2.0 or newer** for the encrypted broker.
 
+### Boards that already run their own code (MQTT boards)
+**Devices → Add MQTT board** is for a board with its own sketch that listens on a topic for `ON` / `OFF` (e.g. `rawniee/test/r4`).
+1. Choose the classroom (any floor) and what it switches.
+2. Enter its broker, topic, the ON and OFF messages, and its state topic (e.g. `rawniee/test/r4/state`) if it answers.
+3. **Test**, then **Save board**.
+
+It then appears on **Lights & fans** like any other line. The website publishes the message, and the board's state topic confirms it.
+
+**Keep the last ON/OFF on the broker** (on by default) makes a restarted board switch back by itself. Its own code doesn't report online/offline, so "Broker connected" means the broker is reachable.
+
 ## Limits on the free cloud plan
 - **No firmware building on Render free.** The build tools are about 2 GB, and compiling needs more memory and CPU than 512 MB / 0.1 CPU.
   - The website therefore offers firmware as a zip for Arduino IDE. "Upload to board" from the browser and "Update over WiFi" need a server with the tools installed.

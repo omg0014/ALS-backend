@@ -31,6 +31,29 @@ export async function seed({ log = console.log } = {}) {
     await HardwareProfile.updateOne({ code: p.code, version: 1, moduleKind: { $in: [null, 'other'] } }, { $set: { moduleKind: p.moduleKind } })
   }
 
+  // Stand-in hardware type for boards that run their own code (simple MQTT boards)
+  await HardwareProfile.updateOne(
+    { code: 'MQTT', version: 1 },
+    {
+      $setOnInsert: {
+        code: 'MQTT',
+        version: 1,
+        espModel: 'esp8266',
+        espBoard: 'Any board running its own code',
+        relayModule: 'Its own relay wiring',
+        moduleKind: 'other',
+        channels: 1,
+        trigger: 'HIGH',
+        pins: [{ label: 'own code', gpio: 0 }],
+        setupNotes: ['Runs its own code. The website publishes the ON/OFF message to its MQTT topic.'],
+        verified: true,
+        statusNote: 'Own code (MQTT topic)',
+        simple: true,
+      },
+    },
+    { upsert: true }
+  )
+
   // Ready-made device templates (owner request 2026-10-23): the common classroom boxes
   for (const t of TEMPLATES) {
     const profile = await HardwareProfile.findOne({ code: t.code, version: 1 }).lean()

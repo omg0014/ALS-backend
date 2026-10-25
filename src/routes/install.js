@@ -22,7 +22,8 @@ async function installState(roomId) {
   const room = await Room.findById(roomId).populate('floor').lean()
   if (!room) throw notFound('Room not found')
   const groups = await LightingGroup.find({ room: room._id }).sort({ name: 1 }).lean()
-  const devices = await Device.find({ room: room._id, status: { $ne: 'retired' } }).populate('profile').lean()
+  // Boards on their own code (MQTT boards) have no desk test, firmware or wiring sheet here
+  const devices = await Device.find({ room: room._id, status: { $ne: 'retired' }, kind: { $ne: 'simple' } }).populate('profile').lean()
   const ids = devices.map((d) => d._id)
   const [channels, states, benches, builds, records] = await Promise.all([
     Channel.find({ device: { $in: ids } }).sort({ index: 1 }).lean(),

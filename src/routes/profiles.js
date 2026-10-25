@@ -8,7 +8,7 @@ import { logChange } from '../services/changeLog.js'
 const router = Router()
 
 router.get('/', async (req, res) => {
-  const profiles = await HardwareProfile.find().sort({ code: 1, version: -1 }).lean()
+  const profiles = await HardwareProfile.find({ simple: { $ne: true } }).sort({ code: 1, version: -1 }).lean()
   res.json(profiles.map((p) => ({ ...p, allowedPins: allowedPins(p.espModel) })))
 })
 

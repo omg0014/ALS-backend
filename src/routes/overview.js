@@ -32,6 +32,8 @@ router.get('/overview', async (req, res) => {
       name: d.name,
       room: d.room,
       profile: d.profile,
+      kind: d.kind ?? 'acls',
+      simple: d.kind === 'simple' ? { url: d.simple?.url, username: d.simple?.username, commandTopic: d.simple?.commandTopic, stateTopic: d.simple?.stateTopic, onPayload: d.simple?.onPayload, offPayload: d.simple?.offPayload, retain: d.simple?.retain } : undefined,
       status: d.status,
       firmwareVersion: d.firmwareVersion,
       mac: d.mac,

@@ -30,7 +30,7 @@ export function pinLabel(espModel, gpio) {
 // Warnings shown (never hidden) when a lighting group is assigned to a relay channel.
 export function loadWarnings(profile, group) {
   const warnings = []
-  if (!profile || !group) return warnings
+  if (!profile || !group || profile.simple) return warnings
   const amps = Number(group.estimatedAmps) || 0
   if (profile.contactRatingA && amps > profile.contactRatingA) {
     warnings.push(`Estimated load ${amps}A is above the relay contact rating (${profile.contactRatingA}A).`)

@@ -40,6 +40,7 @@ export function otaBaseUrl() {
 // a board logs in with it (see broker promoteCredentials).
 export async function generateFirmware(req, device, { wifiSsid, wifiPassword }) {
   if (device.status === 'retired') throw conflict('Device is retired')
+  if (device.kind === 'simple') throw badRequest('This board runs its own code: the website does not make firmware for it')
   wifiSsid = String(wifiSsid ?? '').trim()
   wifiPassword = String(wifiPassword ?? '')
   if (!wifiSsid) throw badRequest('WiFi name is required')

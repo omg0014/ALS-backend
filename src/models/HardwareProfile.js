@@ -22,6 +22,8 @@ const hardwareProfileSchema = new Schema(
     setupNotes: { type: [String], default: [] },
     verified: { type: Boolean, default: false },
     statusNote: { type: String, default: '' },
+    // The stand-in type for boards running their own code (simple MQTT boards); hidden from pickers
+    simple: { type: Boolean, default: false },
   },
   { timestamps: true }
 )

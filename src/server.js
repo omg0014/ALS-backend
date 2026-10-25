@@ -8,7 +8,8 @@ import { loadMqttConfig, externalMqtt } from './services/mqttConfig.js'
 import { startBroker, stopBroker } from './services/broker.js'
 import { initRealtime } from './services/realtime.js'
 import { onDeviceDisconnect, onDeviceMessage, resetLiveState } from './services/deviceEvents.js'
-import { closeStaleCommands } from './services/commands.js'
+import { closeStaleCommands, handleAck, reconcileDevice } from './services/commands.js'
+import { startSimpleBoards, stopSimpleBoards } from './services/simpleBoards.js'
 import { cleanupOldBuilds } from './services/firmware/builder.js'
 import { closeStaleBuilds } from './services/firmware/jobs.js'
 
@@ -39,6 +40,7 @@ async function main() {
   const server = http.createServer(createApp())
   initRealtime(server)
   await startBroker({ port: config.mqttPort, onMessage: onDeviceMessage, onDisconnect: onDeviceDisconnect })
+  await startSimpleBoards({ handleAck, reconcileDevice })
   await new Promise((resolve) => server.listen(config.port, resolve))
   console.log(`[api] listening on :${config.port}  →  open ${config.publicUrl || `http://localhost:${config.port}`}`)
   if (externalMqtt()) console.log(`[api] devices connect to the MQTT broker ${externalMqtt().host}:${externalMqtt().port}`)
@@ -49,6 +51,7 @@ async function main() {
     console.log('shutting down')
     server.close()
     await stopBroker()
+    await stopSimpleBoards()
     await mongoose.disconnect()
     process.exit(0)
   }

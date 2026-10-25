@@ -3,6 +3,7 @@ import { newId } from '../lib/crypto.js'
 import { notFound, forbidden, badRequest } from '../lib/errors.js'
 import { canUseFloor } from '../lib/auth.js'
 import { publishCommand } from './broker.js'
+import { isSimpleId, publishSimple } from './simpleBoards.js'
 import { emit } from './realtime.js'
 import { getSetting } from './settings.js'
 
@@ -160,9 +161,15 @@ async function sendOne(d) {
   const sentAt = new Date()
   await Command.updateOne({ cmdId: d.cmdId }, { $set: { sentAt } })
   try {
-    await publishCommand(d.deviceId, { id: d.cmdId, ch: d.channel, state: d.desired })
+    if (isSimpleId(d.deviceId)) {
+      // A board on its own code: its state topic confirms it; without one, "sent" is all we know
+      const nothingWillConfirm = await publishSimple(d.deviceId, d.desired)
+      if (nothingWillConfirm) return setResult(d.cmdId, ['pending'], { result: 'confirmed', confirmedAt: new Date(), latencyMs: 0 })
+    } else {
+      await publishCommand(d.deviceId, { id: d.cmdId, ch: d.channel, state: d.desired })
+    }
   } catch (err) {
-    console.error('[commands] publish failed', err)
+    console.error('[commands] publish failed', err.message)
     return setResult(d.cmdId, ['pending'], { result: 'failed' })
   }
   setTimeout(

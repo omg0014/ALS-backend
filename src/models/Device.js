@@ -3,10 +3,24 @@ import { ref } from './shared.js'
 
 const { Schema, model } = mongoose
 
-// One ESP relay box, identified by "acls-" + its chip ID.
+// One ESP relay box, identified by "acls-" + its chip ID. A "simple" board runs its own code: the
+// website only publishes an ON/OFF message to its MQTT topic (ID "mqtt-" + 6 random hex digits).
 const deviceSchema = new Schema(
   {
-    deviceId: { type: String, required: true, unique: true, match: /^acls-[0-9a-f]{6}$/ },
+    deviceId: { type: String, required: true, unique: true, match: /^(acls|mqtt)-[0-9a-f]{6}$/ },
+    kind: { type: String, enum: ['acls', 'simple'], default: 'acls' },
+    simple: {
+      _id: false,
+      url: String, // mqtt://host:1883 or mqtts://host:8883
+      username: String,
+      passwordEnc: { type: String, select: false },
+      commandTopic: String,
+      stateTopic: String, // optional: where the board reports ON/OFF back
+      onPayload: String,
+      offPayload: String,
+      retain: Boolean, // keep the last command on the broker, so a restarted board switches back
+      synced: Boolean, // first state report seen (taken as the starting state, never overridden)
+    },
     name: { type: String, required: true, trim: true },
     room: { ...ref('Room'), default: null },
     profile: { ...ref('HardwareProfile'), required: true },
