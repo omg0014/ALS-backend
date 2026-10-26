@@ -53,13 +53,18 @@ function brokerInput(body) {
   return b
 }
 
+const friendly = (msg) =>
+  /certificate|self.signed|unable to verify/i.test(msg)
+    ? "the broker's certificate is not trusted. Paste its root certificate under \"Root certificate\" (the setup script prints it)."
+    : msg
+
 // Both logins must work before anything is saved
 async function testBoth(b) {
   const broker = brokerFrom(b)
-  const server = await testBrokerLogin({ url: broker.url, username: b.username, password: b.password })
-  if (!server.ok) return { ok: false, error: `Server login failed: ${server.error}` }
-  const boards = await testBrokerLogin({ url: broker.url, username: b.deviceUsername, password: b.devicePassword })
-  if (!boards.ok) return { ok: false, error: `Board login failed: ${boards.error}` }
+  const server = await testBrokerLogin({ url: broker.url, username: b.username, password: b.password, ca: broker.ca })
+  if (!server.ok) return { ok: false, error: `Server login failed: ${friendly(server.error)}` }
+  const boards = await testBrokerLogin({ url: broker.url, username: b.deviceUsername, password: b.devicePassword, ca: broker.ca })
+  if (!boards.ok) return { ok: false, error: `Board login failed: ${friendly(boards.error)}` }
   return { ok: true }
 }
 

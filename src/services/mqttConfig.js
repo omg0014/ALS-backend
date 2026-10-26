@@ -35,7 +35,9 @@ export function brokerFrom({ host, port, tls, username, password, deviceUsername
     tls: Boolean(tls),
     username: username || '',
     password: password || '',
-    ca: '',
+    // A root certificate entered for the boards is trusted by this server too (a broker with its own,
+    // private certificate, e.g. Mosquitto on a school or cloud server)
+    ca: deviceCa || '',
     deviceUsername: deviceUsername || '',
     devicePassword: devicePassword || '',
     deviceCa: deviceCa || '',
