@@ -43,7 +43,7 @@ function addUpdateReason(device, reason) {
 
 // ---- Simple MQTT boards (their own code; the website publishes ON/OFF to their topic) ----
 
-const LINE_TYPES = ['lights', 'fans', 'mixed', 'ac', 'load']
+const LINE_TYPES = ['lights', 'fans', 'mixed', 'ac', 'load', 'all']
 const topicError = (t, label) =>
   !t ? `${label} is required` : /[#+]/.test(t) ? `${label} cannot contain # or +` : t.length > 200 ? `${label} is too long` : /\s$|^\s/.test(t) ? `${label} has spaces at the start or end` : null
 
@@ -94,7 +94,7 @@ async function simpleInput(body, existing) {
 async function lineForRoom(line, roomId) {
   if (line.group) return validGroupForRoom(line.group, roomId)
   const count = await LightingGroup.countDocuments({ room: roomId, type: line.type })
-  const fallback = { lights: 'Lights', fans: 'Fans', mixed: 'Lights and fans', ac: 'AC', load: 'TV / smart board' }[line.type]
+  const fallback = { lights: 'Lights', fans: 'Fans', mixed: 'Lights and fans', ac: 'AC', load: 'TV / smart board', all: 'Lights + fans + TV' }[line.type]
   const group = await LightingGroup.create({ room: roomId, name: line.name || `${fallback} ${count + 1}`, type: line.type, estimatedAmps: 0 })
   return group._id
 }

@@ -8,8 +8,9 @@ const lightingGroupSchema = new Schema(
   {
     room: { ...ref('Room'), required: true },
     name: { type: String, required: true, trim: true },
-    // "ac" and "load" (TV / smart-board points) belong on 30A relays
-    type: { type: String, enum: ['lights', 'fans', 'mixed', 'ac', 'load'], default: 'lights' },
+    // "ac", "load" (TV / smart-board points) and "all" (lights + fans + TV: a whole classroom on one
+    // relay) belong on 30A relays
+    type: { type: String, enum: ['lights', 'fans', 'mixed', 'ac', 'load', 'all'], default: 'lights' },
     switches: { type: String, default: '' },
     estimatedAmps: { type: Number, default: 0, min: 0 },
   },

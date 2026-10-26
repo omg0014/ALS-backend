@@ -6,7 +6,7 @@ import { logChange } from '../services/changeLog.js'
 
 // Device templates for the "Add a device" wizard. Everyone can use them; staff and admins save new ones.
 const router = Router()
-const TYPES = ['lights', 'fans', 'mixed', 'ac', 'load']
+const TYPES = ['lights', 'fans', 'mixed', 'ac', 'load', 'all']
 
 router.get('/', async (req, res) => {
   res.json(await DeviceTemplate.find().sort({ builtIn: -1, name: 1 }).lean())

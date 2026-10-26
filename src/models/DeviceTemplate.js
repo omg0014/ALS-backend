@@ -3,7 +3,7 @@ import { ref } from './shared.js'
 
 const { Schema, model } = mongoose
 
-const LINE_TYPES = ['lights', 'fans', 'mixed', 'ac', 'load']
+const LINE_TYPES = ['lights', 'fans', 'mixed', 'ac', 'load', 'all']
 
 // A reusable "Add a device" starting point: ESP board + relay board + how many mains lines of each
 // kind, e.g. "ESP-12E + 30 A 1-ch · 1 AC". Picked in the wizard instead of answering again.

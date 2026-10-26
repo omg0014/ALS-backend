@@ -43,8 +43,11 @@ export function loadWarnings(profile, group) {
   if (group.type === 'ac' && (profile.contactRatingA ?? 0) < 30) {
     warnings.push('An AC needs the 30A relay: 10A contacts cannot take a compressor\'s start surge.')
   }
-  if (profile.contactRatingA >= 30 && !['ac', 'load'].includes(group.type)) {
-    warnings.push('30A module is meant for an AC or TV / smart-board point (group type "AC" or "TV / smart board").')
+  if (group.type === 'all' && (profile.contactRatingA ?? 0) < 30) {
+    warnings.push('Lights + fans + TV of a whole classroom on one relay needs the 30A relay.')
+  }
+  if (profile.contactRatingA >= 30 && !['ac', 'load', 'all'].includes(group.type)) {
+    warnings.push('30A module is meant for an AC, a TV / smart-board point, or a whole classroom (lights + fans + TV).')
   }
   return warnings
 }
