@@ -156,14 +156,15 @@ async function onState(b, payload) {
   await Channel.updateOne({ device: b._id, index: 1 }, { $set: { desiredState: ch[0] } })
 }
 
-// Sends ON/OFF. Returns true when the board has no state topic (nothing will confirm it).
+// Sends ON/OFF. Returns true when nothing will confirm it: no state topic, or the board has never
+// answered on it (then the topic is probably wrong, and "sent" is all we know).
 export function publishSimple(deviceId, desired) {
   const b = boards.get(deviceId)
   const pool = b && pools.get(poolKey(b))
   return new Promise((resolve, reject) => {
     if (!pool?.client.connected) return reject(new Error('Broker of this board not reachable'))
     const message = desired === 'ON' ? b.onPayload : b.offPayload
-    pool.client.publish(b.commandTopic, message, { qos: 0, retain: Boolean(b.retain) }, (err) => (err ? reject(err) : resolve(!b.stateTopic)))
+    pool.client.publish(b.commandTopic, message, { qos: 0, retain: Boolean(b.retain) }, (err) => (err ? reject(err) : resolve(!b.stateTopic || !b.synced)))
   })
 }
 
