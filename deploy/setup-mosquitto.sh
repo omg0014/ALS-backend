@@ -25,7 +25,7 @@ if ! command -v mosquitto >/dev/null; then
   apt-get update -q
   apt-get install -yq mosquitto
 fi
-mosquitto -h 2>&1 | head -1
+mosquitto -h 2>&1 | head -1 || true  # "-h" exits with code 3 even when all is well
 mkdir -p "$D"
 
 echo "== Certificate for $IP (kept if it exists)"
