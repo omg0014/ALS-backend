@@ -27,3 +27,6 @@ export { BenchTest } from './BenchTest.js'
 export { CommissioningRecord } from './CommissioningRecord.js'
 export { Sketch } from './Sketch.js'
 export { DeviceTemplate } from './DeviceTemplate.js'
+
+// Analytics
+export { OnPeriod } from './OnPeriod.js'

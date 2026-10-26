@@ -10,6 +10,7 @@ import { emit } from '../services/realtime.js'
 import { kickDevice } from '../services/broker.js'
 import { encrypt } from '../services/mqttConfig.js'
 import { refreshSimpleBoard, testSimpleBoard } from '../services/simpleBoards.js'
+import { closeChannelPeriod, closeDevicePeriods } from '../services/analytics.js'
 
 const router = Router()
 const changed = () => emit('devices:changed', {})
@@ -153,6 +154,7 @@ router.put('/:id/simple', EDITOR, async (req, res) => {
   device.simple = { ...s, ...b.simple, synced: moved ? false : s.synced }
   await device.save()
   const lightingGroup = await lineForRoom(b.line, b.room)
+  await closeChannelPeriod(device._id, 1)
   await Channel.updateOne({ device: device._id, index: 1 }, { $set: { lightingGroup } })
   await logChange(req, 'device', 'update', { ...before, simple: { ...s, passwordEnc: undefined } }, { ...device.toObject(), simple: { ...device.simple, passwordEnc: undefined } })
   await refreshSimpleBoard(device.deviceId)
@@ -270,7 +272,11 @@ router.put('/:id/channels/:index', EDITOR, async (req, res) => {
   const before = channel.toObject()
   const body = req.body ?? {}
 
-  if (body.lightingGroup !== undefined) channel.lightingGroup = await validGroupForRoom(body.lightingGroup, device.room)
+  if (body.lightingGroup !== undefined) {
+    const next = await validGroupForRoom(body.lightingGroup, device.room)
+    if (String(next) !== String(channel.lightingGroup)) await closeChannelPeriod(device._id, channel.index) // ON time now counts for the new line
+    channel.lightingGroup = next
+  }
   if (body.gpio !== undefined && Number(body.gpio) !== channel.gpio) {
     if (req.user.role !== 'admin') throw badRequest('Only an admin can change a relay pin')
     const gpio = Number(body.gpio)
@@ -297,6 +303,7 @@ router.post('/:id/retire', EDITOR, async (req, res) => {
   await device.save()
   await Channel.updateMany({ device: device._id }, { $set: { lightingGroup: null, desiredState: 0 } })
   kickDevice(device.deviceId)
+  await closeDevicePeriods(device._id)
   if (device.kind === 'simple') await refreshSimpleBoard(device.deviceId)
   await logChange(req, 'device', 'update', before, device)
   changed()

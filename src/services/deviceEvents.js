@@ -3,6 +3,7 @@ import { emit } from './realtime.js'
 import { handleAck, reconcileDevice } from './commands.js'
 import { onOtaReport } from './firmware/jobs.js'
 import { markNewestFirmwareInstalled } from './firmware/installed.js'
+import { closeDevicePeriods, recordStates } from './analytics.js'
 
 export const stateView = (s) =>
   s && {
@@ -71,6 +72,7 @@ async function handleMessage(deviceId, leaf, payload) {
     const ch = msg.ch.map((v) => (v ? 1 : 0))
     state = await upsertState(device, { $set: { channelStates: ch, online: true, lastSeen: now } })
     emit('device:state', stateView(state))
+    await recordStates(device._id, ch, now)
     if (msg.ack) await handleAck(deviceId, String(msg.ack), ch)
     const claimed = await DeviceState.findOneAndUpdate(
       { device: device._id, needsReconcile: true },
@@ -105,7 +107,10 @@ async function markOffline(deviceId) {
     { $set: { online: false } },
     { returnDocument: 'after' }
   ).lean()
-  if (state) emit('device:state', stateView(state))
+  if (state) {
+    emit('device:state', stateView(state))
+    await closeDevicePeriods(state.device)
+  }
 }
 
 // After a restart nobody is known to be online yet: the built-in broker has no clients, and an external

@@ -3,6 +3,7 @@ import { Channel, Command, Device, DeviceState } from '../models/index.js'
 import { decrypt } from './mqttConfig.js'
 import { emit } from './realtime.js'
 import { stateView } from './deviceEvents.js'
+import { closeDevicePeriods, recordStates } from './analytics.js'
 
 // Simple MQTT boards: boards that run their own code (e.g. "send ON to rawniee/test/r4"). The website
 // publishes their ON or OFF message to their command topic on their broker, and reads their state
@@ -117,7 +118,10 @@ async function onPoolConnect(pool, ids) {
 
 async function markOffline(deviceId) {
   const st = await DeviceState.findOneAndUpdate({ deviceId, online: true }, { $set: { online: false } }, { returnDocument: 'after' }).lean()
-  if (st) emit('device:state', stateView(st))
+  if (st) {
+    emit('device:state', stateView(st))
+    await closeDevicePeriods(st.device)
+  }
 }
 
 // The board reported ON or OFF on its state topic.
@@ -131,6 +135,7 @@ async function onState(b, payload) {
     { upsert: true, returnDocument: 'after' }
   ).lean()
   emit('device:state', stateView(st))
+  await recordStates(b._id, ch)
 
   const pending = await Command.findOne({ deviceId: b.deviceId, channel: 1, result: { $in: ['pending', 'not_confirmed'] } }).sort({ createdAt: -1 }).lean()
   if (!b.synced) {

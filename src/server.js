@@ -9,6 +9,7 @@ import { startBroker, stopBroker } from './services/broker.js'
 import { initRealtime } from './services/realtime.js'
 import { onDeviceDisconnect, onDeviceMessage, resetLiveState } from './services/deviceEvents.js'
 import { closeStaleCommands, handleAck, reconcileDevice } from './services/commands.js'
+import { backfillFromCommands, closeStalePeriods } from './services/analytics.js'
 import { startSimpleBoards, stopSimpleBoards } from './services/simpleBoards.js'
 import { cleanupOldBuilds } from './services/firmware/builder.js'
 import { closeStaleBuilds } from './services/firmware/jobs.js'
@@ -31,6 +32,8 @@ async function main() {
   await loadSettings()
   await trackServerAddress()
   await resetLiveState()
+  await closeStalePeriods()
+  await backfillFromCommands()
   await closeStaleCommands()
   await closeStaleBuilds()
 
