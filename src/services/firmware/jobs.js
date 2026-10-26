@@ -23,6 +23,8 @@ export function deviceMqttOptions() {
   const ext = externalMqtt()
   if (!ext) {
     if (config.cloud) throw badRequest('Enter the MQTT broker on the Settings page first: the boards need it to connect.')
+    // Own server on the internet: the built-in broker over TLS, each board with its own login
+    if (config.mqttTls.port) return { tls: true, ca: config.mqttTls.deviceCa, perDevice: true }
     return undefined
   }
   if (!ext.deviceUsername || !ext.devicePassword) throw badRequest('The MQTT broker has no board login yet: add it on the Settings page.')

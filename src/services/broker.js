@@ -1,4 +1,5 @@
 import net from 'node:net'
+import tls from 'node:tls'
 import { Aedes } from 'aedes'
 import mqtt from 'mqtt'
 import { Device } from '../models/index.js'
@@ -19,6 +20,7 @@ import { markNewestFirmwareInstalled } from './firmware/installed.js'
 const DEVICE_PUBLISH = new Set(['state', 'status', 'telemetry', 'ota'])
 let aedes = null
 let tcpServer = null
+let tlsServer = null
 let client = null // external broker connection
 let handlers = null
 const onlineExternal = new Set()
@@ -195,6 +197,14 @@ async function startEmbedded({ onMessage, onDisconnect }) {
   tcpServer = net.createServer(aedes.handle)
   await new Promise((resolve) => tcpServer.listen(port, resolve))
   console.log(`[mqtt] broker listening on :${port} (topic root ${root})`)
+  // Boards on the internet (own server): the same broker, encrypted
+  const t = config.mqttTls
+  if (t.port && t.cert && t.key) {
+    tlsServer = tls.createServer({ cert: t.cert, key: t.key }, aedes.handle)
+    tlsServer.on('tlsClientError', (err) => console.warn(`[mqtt] TLS: ${err.message}`))
+    await new Promise((resolve) => tlsServer.listen(t.port, resolve))
+    console.log(`[mqtt] encrypted (TLS) listener on :${t.port}`)
+  }
 }
 
 export function publishCommand(deviceId, payload) {
@@ -223,5 +233,7 @@ export function kickDevice(deviceId) {
 export async function stopBroker() {
   if (client) await new Promise((r) => client.end(false, {}, () => r()))
   await new Promise((r) => (tcpServer ? tcpServer.close(() => r()) : r()))
+  await new Promise((r) => (tlsServer ? tlsServer.close(() => r()) : r()))
+  tlsServer = null
   await new Promise((r) => (aedes ? aedes.close(() => r()) : r()))
 }

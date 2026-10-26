@@ -101,7 +101,9 @@ router.post('/firmware/preview', EDITOR, async (req, res) => {
     summary: [
       `Board ${deviceId} (${profile.espModel === 'esp32' ? 'ESP32' : 'NodeMCU'}) named "${name}"${room ? ` in ${room.displayName}` : ''}.`,
       wifiSsid ? `Joins the WiFi "${wifiSsid}"${b.wifiPassword ? ' with the password you typed' : ' (type its password above)'}.` : 'Joins the WiFi you enter.',
-      mqtt
+      mqtt?.perDevice
+        ? `Connects to this server at ${settings.brokerHost}:${settings.brokerPort} over an encrypted (TLS) connection with its own private login.`
+        : mqtt
         ? `Connects to the MQTT broker ${settings.brokerHost}:${settings.brokerPort}${mqtt.tls ? ' over an encrypted (TLS) connection' : ''} with the device login.`
         : `Connects to this server at ${settings.brokerHost || '(address not found)'}:${settings.brokerPort} with its own private login.`,
       ...channels.map(

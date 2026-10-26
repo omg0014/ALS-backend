@@ -17,8 +17,9 @@ const pemLiteral = (pem) =>
 
 // config.h for the shared firmware template (firmware/acls_firmware). Pins and trigger level come
 // from the device's channels and hardware profile; nothing is invented here.
-// mqtt: { tls, ca, username, password } for an external broker (cloud); omitted = the built-in broker,
-// where each board logs in with its own name and secret. buildId lets the server see which build runs.
+// mqtt: { tls, ca, username, password } for an external broker (cloud, shared board login), or
+// { tls, ca, perDevice } for the built-in broker over TLS; omitted = the built-in broker on the LAN.
+// With the built-in broker each board logs in with its own name and secret. buildId lets the server see which build runs.
 export function buildConfigHeader({ device, profile, channels, room, settings, secret, wifiSsid, wifiPassword, mqtt, buildId }) {
   const sorted = [...channels].sort((a, b) => a.index - b.index)
   const pins = sorted.map((c) => c.gpio)
@@ -55,8 +56,8 @@ export function buildConfigHeader({ device, profile, channels, room, settings, s
     '',
     `#define MQTT_HOST ${cString(settings.brokerHost, 'brokerHost')}`,
     `#define MQTT_PORT ${Number(settings.brokerPort)}`,
-    `#define MQTT_USER ${cString(mqtt ? mqtt.username : device.mqttUsername, 'mqttUsername')}`,
-    `#define MQTT_PASSWORD ${cString(mqtt ? mqtt.password : secret, 'secret')}`,
+    `#define MQTT_USER ${cString(mqtt && !mqtt.perDevice ? mqtt.username : device.mqttUsername, 'mqttUsername')}`,
+    `#define MQTT_PASSWORD ${cString(mqtt && !mqtt.perDevice ? mqtt.password : secret, 'secret')}`,
     `#define TOPIC_ROOT ${cString(settings.topicRoot, 'topicRoot')}`,
     `#define ACLS_BUILD ${cString(buildId ?? '', 'buildId')}`,
     '',

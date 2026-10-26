@@ -32,6 +32,14 @@ const firmwareDir = [path.resolve(here, '../firmware'), path.resolve(here, '../.
 export const config = {
   port: Number(env.PORT || 4000),
   mqttPort: Number(env.MQTT_PORT || 1883),
+  // Built-in broker over TLS for boards on the internet (own server): port, certificate and key files,
+  // and the root certificate the boards check it against (MQTT_DEVICE_CA). 0 = no TLS listener.
+  mqttTls: {
+    port: Number(env.MQTT_TLS_PORT || 0),
+    cert: env.MQTT_TLS_CERT ? fs.readFileSync(env.MQTT_TLS_CERT, 'utf8') : '',
+    key: env.MQTT_TLS_KEY ? fs.readFileSync(env.MQTT_TLS_KEY, 'utf8') : '',
+    deviceCa: env.MQTT_URL ? '' : pem(env.MQTT_DEVICE_CA),
+  },
   mongoUrl: env.MONGO_URL || env.MONGODB_URI || 'mongodb://127.0.0.1:27017/acls',
   jwtSecret,
   sessionHours: Number(env.SESSION_HOURS || 12),

@@ -32,6 +32,23 @@ test/              end-to-end test (npm test)
 render.yaml        Render blueprint
 ```
 
+## Own server (recommended): one command
+
+On an Ubuntu 22.04/24.04 server with a public IP (e.g. a DigitalOcean droplet, 2 GB RAM or more), run as root:
+
+```
+curl -fsSL https://raw.githubusercontent.com/omg0014/ALS-backend/main/deploy/install-server.sh | sudo bash
+```
+
+It installs and sets up everything:
+- Node 22, MongoDB 8, the backend, and the website (served by the backend);
+- HTTPS through Caddy, with a free certificate for `<ip-with-dashes>.sslip.io` (or `DOMAIN=lights.myschool.in`);
+- the built-in MQTT broker, encrypted on **8883**: each board has its own login, and boards trust a private root certificate made on the server, valid 10 years;
+- the firmware build tools, so upload from the website and **Update over WiFi** work;
+- a firewall (22, 80, 443, 8883), auto-start, and a nightly database backup.
+
+At the end it prints the website address and the admin password. Run the same command again to update.
+
 ## Deploy to the cloud
 
 ### 1. MongoDB Atlas (free M0)

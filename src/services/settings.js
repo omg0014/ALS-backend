@@ -54,8 +54,8 @@ export async function loadSettings() {
     } else {
       // Not set by hand → BROKER_PUBLIC_HOST from .env, else this PC's own LAN address (found at start)
       if (key === 'brokerHost' && !value) value = config.brokerPublicHost || detectLanIp()
-      // The port the devices use is the port this server's broker really listens on
-      if (key === 'brokerPort' && !row) value = config.mqttPort
+      // The port the devices use is the port this server's broker really listens on (TLS when there is one)
+      if (key === 'brokerPort' && (!row || config.mqttTls.port)) value = config.mqttTls.port || config.mqttPort
     }
     cache.set(key, value)
   }
