@@ -1,0 +1,17 @@
+# Pings the Render backend so the free plan does not put it to sleep (it sleeps after 15 minutes
+# without visits, and then the lights cannot be switched until it wakes up).
+# Backup only: GitHub can start scheduled runs late, so cron-job.org (every 10 min) is the main ping.
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /api/health
+        run: curl -fsS --retry 3 --retry-delay 20 --max-time 60 https://als-backend-emf3.onrender.com/api/health
