@@ -70,7 +70,8 @@ export const config = {
   buildsDir: env.BUILDS_DIR || path.resolve(here, '../data/builds'),
   webDist: env.WEB_DIST || path.resolve(here, '../../frontend/dist'),
   // Websites allowed to use the live updates from another address (the Vercel site), comma separated
-  corsOrigins: (env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
+  // (a trailing "/" is ignored: browsers send the address without it)
+  corsOrigins: (env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean),
   // Proxies in front of the API (e.g. 1 behind a reverse proxy), used for client IPs in the audit log
   trustProxy: /^\d+$/.test(env.TRUST_PROXY ?? '') ? Number(env.TRUST_PROXY) : env.TRUST_PROXY || 'loopback',
 }
