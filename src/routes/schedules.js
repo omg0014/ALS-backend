@@ -45,18 +45,19 @@ async function readSchedule(req) {
 
   const slots = (Array.isArray(b.slots) ? b.slots : []).map((x, i) => {
     const n = `Time ${i + 1}`
-    if (!TIME.test(x?.start ?? '')) throw badRequest(`${n}: enter the ON time`)
+    if (!TIME.test(x?.start ?? '')) throw badRequest(`${n}: enter the ${x?.kind === 'off' ? 'OFF' : 'ON'} time`)
+    if (x.kind === 'on' || x.kind === 'off') return { kind: x.kind, start: x.start }
     if (x.kind === 'timer') {
       const minutes = Math.round(Number(x.minutes))
       if (!(minutes >= 1 && minutes <= MAX_TIMER_MIN)) throw badRequest(`${n}: the timer must be 1 to ${MAX_TIMER_MIN} minutes (12 hours)`)
       return { kind: 'timer', start: x.start, minutes }
     }
-    if (x.kind !== 'range') throw badRequest(`${n}: choose "From … to …" or "Timer"`)
+    if (x.kind !== 'range') throw badRequest(`${n}: choose "From … to …", "Timer", "Only ON at" or "Only OFF at"`)
     if (!TIME.test(x.end ?? '')) throw badRequest(`${n}: enter the OFF time`)
     if (x.end === x.start) throw badRequest(`${n}: the OFF time must be different from the ON time`)
     return { kind: 'range', start: x.start, end: x.end }
   })
-  if (!slots.length) throw badRequest('Add at least one ON time')
+  if (!slots.length) throw badRequest('Add at least one time')
   if (slots.length > MAX_SLOTS) throw badRequest(`At most ${MAX_SLOTS} times per schedule`)
   checkNoOverlap(slots, days)
 
@@ -65,18 +66,25 @@ async function readSchedule(req) {
   return { name, target, days, slots, timezone }
 }
 
-// Two times of the same schedule may not overlap on any day (e.g. 9:00–10:00 and 9:30 for 30 min).
+// Two times of the same schedule may not overlap on any day (e.g. 9:00–10:00 and 9:30 for 30 min),
+// a single ON or OFF may not fall inside one of its ON times, and two may not be at the same minute.
 // One may start exactly when the other ends.
 function checkNoOverlap(slots, days) {
   const WEEK = 7 * 1440
   const spans = days.flatMap((d) => slots.map((s, i) => ({ i, from: d * 1440 + toMinutes(s.start), len: slotMinutes(s) })))
-  const fmt = (s) => (s.kind === 'timer' ? `${s.start} for ${s.minutes} min` : `${s.start}–${s.end}`)
+  const fmt = (s) => ({ timer: `${s.start} for ${s.minutes} min`, on: `ON at ${s.start}`, off: `OFF at ${s.start}` })[s.kind] ?? `${s.start}–${s.end}`
+  const inside = (p, w, shift) => w.from + shift <= p && p < w.from + shift + w.len
+  const clash = (x, y, shift) => {
+    if (x.len && y.len) return x.from < y.from + shift + y.len && y.from + shift < x.from + x.len
+    if (!x.len && !y.len) return x.from === y.from + shift
+    return x.len ? inside(y.from + shift, x, 0) : inside(x.from, y, shift)
+  }
   for (let a = 0; a < spans.length; a++) {
     for (let b = a + 1; b < spans.length; b++) {
       const x = spans[a]
       const y = spans[b]
       if (x.i === y.i) continue
-      const hit = [-WEEK, 0, WEEK].some((shift) => x.from < y.from + shift + y.len && y.from + shift < x.from + x.len)
+      const hit = [-WEEK, 0, WEEK].some((shift) => clash(x, y, shift))
       if (hit) throw badRequest(`"${fmt(slots[x.i])}" and "${fmt(slots[y.i])}" overlap. Change one, or make one start when the other ends`)
     }
   }

@@ -20,8 +20,14 @@ export const toMinutes = (hhmm) => {
   return h * 60 + m
 }
 
+// A slot that only switches once: "ON at 8:30" or "OFF at 18:00" (no matching OFF / ON)
+export const isSingle = (slot) => slot.kind === 'on' || slot.kind === 'off'
+
 // How long a slot keeps its target ON, in minutes (a range that ends "earlier" ends the next day).
-export const slotMinutes = (slot) => (slot.kind === 'timer' ? slot.minutes : (toMinutes(slot.end) - toMinutes(slot.start) + 1440) % 1440)
+export function slotMinutes(slot) {
+  if (isSingle(slot)) return 0
+  return slot.kind === 'timer' ? slot.minutes : (toMinutes(slot.end) - toMinutes(slot.start) + 1440) % 1440
+}
 
 // ---- Wall-clock time in the school's time zone ----
 
@@ -60,7 +66,8 @@ export function isValidTimeZone(tz) {
 
 // ---- When a schedule is ON ----
 
-// The ON windows of slots that start on the days touching [from, to]
+// The ON windows of slots that start on the days touching [from, to]. A single ON or OFF has no
+// window, only its one time (`single`).
 function windows(s, from, to) {
   const out = []
   const a = wallClock(new Date(from.getTime() - DAY), s.timezone) // a slot from the evening before can run into `from`
@@ -71,7 +78,8 @@ function windows(s, from, to) {
     if (!s.days.includes(day.getUTCDay())) continue
     for (const slot of s.slots) {
       const on = atWallClock(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), toMinutes(slot.start), s.timezone)
-      out.push({ on, off: new Date(on.getTime() + slotMinutes(slot) * MIN), slot })
+      if (isSingle(slot)) out.push({ on, single: slot.kind === 'on' ? 'ON' : 'OFF', slot })
+      else out.push({ on, off: new Date(on.getTime() + slotMinutes(slot) * MIN), slot })
     }
   }
   return out
@@ -81,15 +89,19 @@ function windows(s, from, to) {
 // begins, OFF comes first, so the target stays ON.
 export function eventsBetween(s, from, to) {
   return windows(s, from, to)
-    .flatMap((w) => [
-      { at: w.on, state: 'ON', slot: w.slot },
-      { at: w.off, state: 'OFF', slot: w.slot },
-    ])
+    .flatMap((w) =>
+      w.single
+        ? [{ at: w.on, state: w.single, slot: w.slot }]
+        : [
+            { at: w.on, state: 'ON', slot: w.slot },
+            { at: w.off, state: 'OFF', slot: w.slot },
+          ]
+    )
     .filter((e) => e.at > from && e.at <= to)
     .sort((x, y) => x.at - y.at || (x.state === 'OFF' ? -1 : 1))
 }
 
-export const isOnAt = (s, t) => windows(s, t, t).some((w) => w.on <= t && t < w.off)
+export const isOnAt = (s, t) => windows(s, t, t).some((w) => !w.single && w.on <= t && t < w.off)
 
 export const nextEvents = (s, now, count = 2) => eventsBetween(s, now, new Date(now.getTime() + CATCH_UP_DAYS * DAY)).slice(0, count)
 

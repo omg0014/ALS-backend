@@ -4,12 +4,13 @@ import { actorSchema } from './shared.js'
 const { Schema, model } = mongoose
 
 // A timetable for one target (a line, a classroom, a floor or the whole school): on the chosen days,
-// each slot turns it ON at `start` and OFF again at `end` (time range) or after `minutes` (timer).
+// each slot turns it ON at `start` and OFF again at `end` (time range) or after `minutes` (timer),
+// or switches it just once at `start`: only ON ('on') or only OFF ('off', e.g. everything OFF at 18:00).
 // Times are wall-clock times in the school's time zone. Switching by hand always works: the schedule
 // only acts again at its next ON or OFF time.
 const slotSchema = new Schema(
   {
-    kind: { type: String, enum: ['range', 'timer'], required: true },
+    kind: { type: String, enum: ['range', 'timer', 'on', 'off'], required: true },
     start: { type: String, required: true }, // "HH:MM", 24 h
     end: String, // "HH:MM" for a time range (earlier than start = ends the next day)
     minutes: Number, // for a timer: how long it stays ON
