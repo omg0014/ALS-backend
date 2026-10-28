@@ -13,6 +13,7 @@ import { backfillFromCommands, closeStalePeriods } from './services/analytics.js
 import { startSimpleBoards, stopSimpleBoards } from './services/simpleBoards.js'
 import { cleanupOldBuilds } from './services/firmware/builder.js'
 import { closeStaleBuilds } from './services/firmware/jobs.js'
+import { startScheduler, stopScheduler } from './services/scheduler.js'
 
 // Starts everything in one process: database, website + API, live updates and MQTT (the built-in
 // broker, or a connection to an external one such as HiveMQ Cloud when MQTT_URL is set).
@@ -44,6 +45,7 @@ async function main() {
   initRealtime(server)
   await startBroker({ port: config.mqttPort, onMessage: onDeviceMessage, onDisconnect: onDeviceDisconnect })
   await startSimpleBoards({ handleAck, reconcileDevice })
+  startScheduler()
   await new Promise((resolve) => server.listen(config.port, resolve))
   console.log(`[api] listening on :${config.port}  →  open ${config.publicUrl || `http://localhost:${config.port}`}`)
   if (externalMqtt()) console.log(`[api] devices connect to the MQTT broker ${externalMqtt().host}:${externalMqtt().port}`)
@@ -53,6 +55,7 @@ async function main() {
   const shutdown = async () => {
     console.log('shutting down')
     server.close()
+    stopScheduler()
     await stopBroker()
     await stopSimpleBoards()
     await mongoose.disconnect()

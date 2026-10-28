@@ -30,3 +30,6 @@ export { DeviceTemplate } from './DeviceTemplate.js'
 
 // Analytics
 export { OnPeriod } from './OnPeriod.js'
+
+// Schedules (timetables that switch lines on and off by themselves)
+export { Schedule } from './Schedule.js'
